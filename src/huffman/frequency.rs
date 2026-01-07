@@ -1,6 +1,5 @@
+use super::BYTE_SIZE;
 use std::io::{self, BufReader, Read};
-
-const BYTE_SIZE: usize = 256;
 
 pub fn get_frequencies(input: impl Read) -> io::Result<Box<[u64; BYTE_SIZE]>> {
     let mut reader = BufReader::new(input);
