@@ -40,7 +40,7 @@ impl PartialOrd for HuffmanNode {
 
 impl Ord for HuffmanNode {
     fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.frequency().cmp(&other.frequency())
+        other.frequency().cmp(&self.frequency())
     }
 }
 
@@ -148,9 +148,9 @@ mod tests {
         heap.push(leaf_large);
 
         let first = heap.pop().unwrap();
-        assert_eq!(first.frequency(), 10);
+        assert_eq!(first.frequency(), 1);
         let second = heap.pop().unwrap();
-        assert_eq!(second.frequency(), 1);
+        assert_eq!(second.frequency(), 10);
     }
 
     #[test]
