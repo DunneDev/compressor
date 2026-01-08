@@ -1,16 +1,21 @@
+mod byte_map;
 mod frequency;
 mod tree;
 
-use frequency::get_frequencies;
+use byte_map::ByteMap;
+use frequency::Frequencies;
 use std::io::{self, Read, Write};
 use tree::HuffmanNode;
 
-const BYTE_SIZE: usize = 256;
+const BYTE_ALPHABET_SIZE: usize = 256;
 
-pub fn compress(input: impl Read, output: impl Write) -> io::Result<()> {
-    let freq = get_frequencies(input)?;
+pub fn compress(input: impl Read, _output: impl Write) -> io::Result<()> {
+    let freq = Frequencies::from_input(input)?;
 
-    let tree_head = HuffmanNode::from(&*freq);
+    let tree_head = HuffmanNode::from_frequencies(&freq);
+
+    let byte_map = ByteMap::from(tree_head);
+    println!("{:?}", byte_map);
 
     Ok(())
 }

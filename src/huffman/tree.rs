@@ -1,4 +1,5 @@
-use super::BYTE_SIZE;
+use crate::huffman::BYTE_ALPHABET_SIZE;
+use crate::huffman::frequency::Frequencies;
 use std::cmp;
 use std::collections::BinaryHeap;
 
@@ -22,36 +23,11 @@ impl HuffmanNode {
             HuffmanNode::Internal { frequency, .. } => *frequency,
         }
     }
-}
 
-impl PartialEq for HuffmanNode {
-    fn eq(&self, other: &Self) -> bool {
-        self.frequency().eq(&other.frequency())
-    }
-}
-
-impl Eq for HuffmanNode {}
-
-impl PartialOrd for HuffmanNode {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for HuffmanNode {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        other.frequency().cmp(&self.frequency())
-    }
-}
-
-impl<T> From<T> for HuffmanNode
-where
-    T: AsRef<[u64]>,
-{
-    fn from(value: T) -> Self {
+    pub fn from_frequencies(frequencies: &Frequencies) -> Self {
         let mut nodes = BinaryHeap::new();
 
-        for (byte, &count) in value.as_ref().iter().enumerate().take(BYTE_SIZE) {
+        for (byte, &count) in frequencies.iter().enumerate().take(BYTE_ALPHABET_SIZE) {
             if count > 0 {
                 nodes.push(HuffmanNode::Leaf {
                     byte: byte as u8,
@@ -72,7 +48,29 @@ where
             })
         }
 
-        nodes.pop().unwrap()
+        nodes
+            .pop()
+            .expect("There should always be exactly one node left after building Huffman tree")
+    }
+}
+
+impl PartialEq for HuffmanNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.frequency().eq(&other.frequency())
+    }
+}
+
+impl Eq for HuffmanNode {}
+
+impl PartialOrd for HuffmanNode {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for HuffmanNode {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        other.frequency().cmp(&self.frequency())
     }
 }
 
@@ -111,11 +109,11 @@ mod tests {
 
     #[test]
     fn test_from_array_creates_correct_leaves() {
-        let mut freqs = [0u64; BYTE_SIZE];
+        let mut freqs = Frequencies::new();
         freqs[10] = 3;
         freqs[20] = 5;
 
-        let root = HuffmanNode::from(&freqs);
+        let root = HuffmanNode::from_frequencies(&freqs);
         assert_eq!(root.frequency(), 8);
 
         fn find_leaf(node: &HuffmanNode, byte: u8) -> Option<u64> {
@@ -155,12 +153,12 @@ mod tests {
 
     #[test]
     fn test_tree_combination() {
-        let mut freqs = [0u64; BYTE_SIZE];
+        let mut freqs = Frequencies::new();
         freqs[1] = 2;
         freqs[2] = 3;
         freqs[3] = 5;
 
-        let root = HuffmanNode::from(freqs);
+        let root = HuffmanNode::from_frequencies(&freqs);
         assert_eq!(root.frequency(), 10);
 
         fn has_internal(node: &HuffmanNode) -> bool {
