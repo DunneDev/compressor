@@ -1,4 +1,5 @@
-use super::BYTE_ALPHABET_SIZE;
+use crate::huffman::tree::HuffmanNode;
+use crate::huffman::{BUFFER_SIZE, BYTE_ALPHABET_SIZE};
 use std::io::{self, BufReader, Read};
 use std::ops::{Deref, DerefMut};
 
@@ -11,7 +12,6 @@ impl Frequencies {
     }
 
     pub fn from_input(input: impl Read) -> io::Result<Self> {
-        const BUFFER_SIZE: usize = 8192;
         let mut buffer = [0; BUFFER_SIZE];
         let mut reader = BufReader::new(input);
         let mut frequencies = Frequencies([0; BYTE_ALPHABET_SIZE]);
@@ -28,6 +28,10 @@ impl Frequencies {
         }
 
         Ok(frequencies)
+    }
+
+    pub fn to_huff_tree(&self) -> HuffmanNode {
+        HuffmanNode::from_frequencies(self)
     }
 
     fn count_byte(&mut self, byte: u8) {
@@ -52,13 +56,6 @@ impl DerefMut for Frequencies {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // TODO: Remove
-    // fn compare_output(output: &Frequencies, expected: &Frequencies) {
-    //     for i in 0..BYTE_ALPHABET_SIZE {
-    //         assert_eq!(output[i], expected[i]);
-    //     }
-    // }
 
     #[test]
     fn get_frequencies_empty_input() {

@@ -1,7 +1,8 @@
 use crate::huffman::BYTE_ALPHABET_SIZE;
+use crate::huffman::byte_map::{ByteMap, CodeEntry};
 use crate::huffman::frequency::Frequencies;
 use std::cmp;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap};
 
 #[derive(Debug)]
 pub enum HuffmanNode {
@@ -17,13 +18,6 @@ pub enum HuffmanNode {
 }
 
 impl HuffmanNode {
-    fn frequency(&self) -> u64 {
-        match self {
-            HuffmanNode::Leaf { fequency, .. } => *fequency,
-            HuffmanNode::Internal { frequency, .. } => *frequency,
-        }
-    }
-
     pub fn from_frequencies(frequencies: &Frequencies) -> Self {
         let mut nodes = BinaryHeap::new();
 
@@ -52,6 +46,36 @@ impl HuffmanNode {
             .pop()
             .expect("There should always be exactly one node left after building Huffman tree")
     }
+
+    pub fn to_byte_map(&self) -> ByteMap {
+        let mut byte_map = ByteMap::new();
+        self.traverse(0, 0, &mut byte_map);
+        byte_map
+    }
+
+    fn frequency(&self) -> u64 {
+        match self {
+            HuffmanNode::Leaf { fequency, .. } => *fequency,
+            HuffmanNode::Internal { frequency, .. } => *frequency,
+        }
+    }
+
+    fn traverse(&self, bits: u32, mut length: u8, byte_map: &mut HashMap<u8, CodeEntry>) {
+        match self {
+            HuffmanNode::Internal {
+                left,
+                right,
+                frequency: _,
+            } => {
+                length += 1;
+                left.traverse(bits << 1, length, byte_map);
+                right.traverse((bits + 1) << 1, length, byte_map);
+            }
+            HuffmanNode::Leaf { byte, fequency: _ } => {
+                byte_map.insert(*byte, CodeEntry { bits, length });
+            }
+        }
+    }
 }
 
 impl PartialEq for HuffmanNode {
@@ -77,8 +101,6 @@ impl Ord for HuffmanNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const BYTE_SIZE: usize = 256;
 
     #[test]
     fn test_leaf_frequency() {
@@ -170,4 +192,27 @@ mod tests {
 
         assert!(has_internal(&root));
     }
+
+    // #[test]
+    // fn tree_to_byte_map() {
+    //     let mut freq = Frequencies::new();
+    //     freq[b'a' as usize] = 5;
+    //     freq[b'b' as usize] = 9;
+    //     freq[b'c' as usize] = 12;
+    //     freq[b'd' as usize] = 13;
+    //     freq[b'e' as usize] = 16;
+    //     freq[b'f' as usize] = 45;
+    //
+    //     let map = freq.to_huff_tree().to_byte_map();
+    //
+    //     let mut expected = ByteMap::new();
+    //     expected.insert(b'f', vec![false]);
+    //     expected.insert(b'c', vec![true, false, false]);
+    //     expected.insert(b'd', vec![true, false, true]);
+    //     expected.insert(b'a', vec![true, true, false, false]);
+    //     expected.insert(b'b', vec![true, true, false, true]);
+    //     expected.insert(b'e', vec![true, true, true]);
+    //
+    //     assert_eq!(map, expected);
+    // }
 }
