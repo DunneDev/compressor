@@ -1,6 +1,7 @@
 use crate::huffman::tree::HuffmanNode;
 use crate::huffman::{BUFFER_SIZE, BYTE_ALPHABET_SIZE};
-use std::io::{self, BufReader, Read};
+use std::io::prelude::*;
+use std::io::{self, BufReader, Cursor};
 use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -11,20 +12,24 @@ impl Frequencies {
         Frequencies([0; BYTE_ALPHABET_SIZE])
     }
 
-    pub fn from_input(input: impl Read) -> io::Result<Self> {
-        let mut buffer = [0; BUFFER_SIZE];
-        let mut reader = BufReader::new(input);
+    pub fn from_input<R>(reader: &mut BufReader<R>) -> io::Result<Self>
+    where
+        R: Read + Seek,
+    {
         let mut frequencies = Frequencies([0; BYTE_ALPHABET_SIZE]);
 
         loop {
-            let bytes_read = reader.read(&mut buffer)?;
-            if bytes_read == 0 {
+            let buffer = reader.fill_buf()?;
+            if buffer.is_empty() {
                 break;
             }
 
-            for &byte in &buffer[..bytes_read] {
+            for &byte in buffer {
                 frequencies.count_byte(byte);
             }
+
+            let length = buffer.len();
+            reader.consume(length);
         }
 
         Ok(frequencies)
@@ -59,8 +64,8 @@ mod tests {
 
     #[test]
     fn get_frequencies_empty_input() {
-        let input = "".as_bytes();
-        let output = Frequencies::from_input(input).unwrap();
+        let mut input = BufReader::new(Cursor::new(""));
+        let output = Frequencies::from_input(&mut input).unwrap();
         let expected = Frequencies::new();
 
         assert_eq!(output, expected);
@@ -68,8 +73,8 @@ mod tests {
 
     #[test]
     fn get_frequencies_single_byte() {
-        let input = [42u8];
-        let output = Frequencies::from_input(&input[..]).unwrap();
+        let mut input = BufReader::new(Cursor::new([42u8]));
+        let output = Frequencies::from_input(&mut input).unwrap();
 
         let mut expected = Frequencies::new();
         expected[42] = 1;
@@ -79,8 +84,9 @@ mod tests {
 
     #[test]
     fn get_frequencies_all_bytes_once() {
-        let input: Vec<u8> = (0u8..=255u8).collect();
-        let output = Frequencies::from_input(&input[..]).unwrap();
+        let mut input: BufReader<Cursor<Vec<u8>>> =
+            BufReader::new(Cursor::new((0u8..=255u8).collect()));
+        let output = Frequencies::from_input(&mut input).unwrap();
 
         let mut expected = Frequencies::new();
         for count in expected.iter_mut() {
@@ -92,8 +98,8 @@ mod tests {
 
     #[test]
     fn get_frequencies_repeated_pattern() {
-        let input = b"abcabcabcabc";
-        let output = Frequencies::from_input(&input[..]).unwrap();
+        let mut input = BufReader::new(Cursor::new(b"abcabcabcabc"));
+        let output = Frequencies::from_input(&mut input).unwrap();
 
         let mut expected = Frequencies::new();
         expected[b'a' as usize] = 4;
@@ -105,8 +111,8 @@ mod tests {
 
     #[test]
     fn get_frequencies_large_input() {
-        let input = vec![b'x'; 20_000];
-        let output = Frequencies::from_input(&input[..]).unwrap();
+        let mut input = BufReader::new(Cursor::new(vec![b'x'; 20_000]));
+        let output = Frequencies::from_input(&mut input).unwrap();
 
         let mut expected = Frequencies::new();
         expected[b'x' as usize] = 20_000;
@@ -116,8 +122,8 @@ mod tests {
 
     #[test]
     fn get_frequencies_binary_data() {
-        let input = [0, 255, 0, 128, 255, 128];
-        let output = Frequencies::from_input(&input[..]).unwrap();
+        let mut input = BufReader::new(Cursor::new([0, 255, 0, 128, 255, 128]));
+        let output = Frequencies::from_input(&mut input).unwrap();
 
         let mut expected = Frequencies::new();
         expected[0] = 2;
@@ -129,8 +135,8 @@ mod tests {
 
     #[test]
     fn get_frequencies_whitespace_and_newlines() {
-        let input = b" \n\t\n ";
-        let output = Frequencies::from_input(&input[..]).unwrap();
+        let mut input = BufReader::new(Cursor::new(b" \n\t\n "));
+        let output = Frequencies::from_input(&mut input).unwrap();
 
         let mut expected = Frequencies::new();
         expected[b' ' as usize] = 2;

@@ -18,6 +18,10 @@ impl<T: Write> BitWriter<T> {
         }
     }
 
+    pub fn into_inner(self) -> T {
+        self.writer
+    }
+
     pub fn write_bit(&mut self, bit: bool) -> io::Result<()> {
         self.byte_buffer = (self.byte_buffer << 1) | bit as u8;
         self.bits_filled += 1;
@@ -43,13 +47,13 @@ impl<T: Write> BitWriter<T> {
         Ok(())
     }
 
-    pub fn flush(mut self) -> io::Result<T> {
+    pub fn flush(&mut self) -> io::Result<()> {
         if self.bits_filled > 0 {
             self.byte_buffer <<= U8_BITS - self.bits_filled;
             self.writer.write_all(&[self.byte_buffer])?;
         }
 
-        Ok(self.writer)
+        Ok(())
     }
 }
 
@@ -63,10 +67,10 @@ mod tests {
     fn write_single_bit() {
         let mut writer = BitWriter::new(io::Cursor::new(vec![]));
         writer.write_bit(true).unwrap();
-        let output = writer.flush().unwrap();
+        writer.flush().unwrap();
         let expected = vec![128];
 
-        assert_eq!(output.into_inner(), expected);
+        assert_eq!(writer.writer.into_inner(), expected);
     }
 
     #[test]
@@ -74,10 +78,10 @@ mod tests {
         let mut writer = BitWriter::new(io::Cursor::new(vec![]));
         writer.write_bit(false).unwrap();
         writer.write_bit(true).unwrap();
-        let output = writer.flush().unwrap();
+        writer.flush().unwrap();
         let expected = vec![64];
 
-        assert_eq!(output.into_inner(), expected);
+        assert_eq!(writer.writer.into_inner(), expected);
     }
 
     #[test]
@@ -87,19 +91,19 @@ mod tests {
             writer.write_bit(true).unwrap();
         }
 
-        let output = writer.flush().unwrap();
+        writer.flush().unwrap();
         let expected = vec![255, 128];
 
-        assert_eq!(output.into_inner(), expected);
+        assert_eq!(writer.writer.into_inner(), expected);
     }
 
     #[test]
     fn write_bits_overflow_byte() {
         let mut writer = BitWriter::new(io::Cursor::new(vec![]));
         writer.write_bits(256, 16).unwrap();
-        let output = writer.flush().unwrap().into_inner();
+        writer.flush().unwrap();
         let expected = vec![1, 0];
 
-        assert_eq!(output, expected);
+        assert_eq!(writer.writer.into_inner(), expected);
     }
 }

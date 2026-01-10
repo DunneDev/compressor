@@ -1,5 +1,5 @@
 use crate::huffman::BYTE_ALPHABET_SIZE;
-use crate::huffman::byte_map::{ByteMap, CodeEntry};
+use crate::huffman::byte_map::{ByteMap, CodeEntry, CodeLength};
 use crate::huffman::frequency::Frequencies;
 use std::cmp;
 use std::collections::{BinaryHeap, HashMap};
@@ -47,12 +47,6 @@ impl HuffmanNode {
             .expect("There should always be exactly one node left after building Huffman tree")
     }
 
-    pub fn to_byte_map(&self) -> ByteMap {
-        let mut byte_map = ByteMap::new();
-        self.traverse(0, 0, &mut byte_map);
-        byte_map
-    }
-
     fn frequency(&self) -> u64 {
         match self {
             HuffmanNode::Leaf { fequency, .. } => *fequency,
@@ -60,19 +54,26 @@ impl HuffmanNode {
         }
     }
 
-    fn traverse(&self, bits: u32, mut length: u8, byte_map: &mut HashMap<u8, CodeEntry>) {
+    pub fn to_byte_map(&self) -> ByteMap {
+        let mut code_lengths = vec![];
+        self.traverse(0, &mut code_lengths);
+
+        ByteMap::new(&mut code_lengths)
+    }
+
+    fn traverse(&self, mut len: u8, codes: &mut Vec<CodeLength>) {
         match self {
             HuffmanNode::Internal {
                 left,
                 right,
                 frequency: _,
             } => {
-                length += 1;
-                left.traverse(bits << 1, length, byte_map);
-                right.traverse((bits + 1) << 1, length, byte_map);
+                len += 1;
+                left.traverse(len, codes);
+                right.traverse(len, codes);
             }
             HuffmanNode::Leaf { byte, fequency: _ } => {
-                byte_map.insert(*byte, CodeEntry { bits, length });
+                codes.push(CodeLength { byte: *byte, len });
             }
         }
     }
