@@ -22,6 +22,10 @@ impl<T: Write> BitWriter<T> {
         self.writer
     }
 
+    pub fn by_ref(&mut self) -> &mut T {
+        self.writer.by_ref()
+    }
+
     pub fn write_bit(&mut self, bit: bool) -> io::Result<()> {
         self.byte_buffer = (self.byte_buffer << 1) | bit as u8;
         self.bits_filled += 1;
@@ -45,6 +49,12 @@ impl<T: Write> BitWriter<T> {
         }
 
         Ok(())
+    }
+
+    pub fn write_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
+        self.flush()?;
+
+        self.writer.write_all(bytes)
     }
 
     pub fn flush(&mut self) -> io::Result<()> {

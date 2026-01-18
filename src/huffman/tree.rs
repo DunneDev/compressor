@@ -193,27 +193,4 @@ mod tests {
 
         assert!(has_internal(&root));
     }
-
-    // #[test]
-    // fn tree_to_byte_map() {
-    //     let mut freq = Frequencies::new();
-    //     freq[b'a' as usize] = 5;
-    //     freq[b'b' as usize] = 9;
-    //     freq[b'c' as usize] = 12;
-    //     freq[b'd' as usize] = 13;
-    //     freq[b'e' as usize] = 16;
-    //     freq[b'f' as usize] = 45;
-    //
-    //     let map = freq.to_huff_tree().to_byte_map();
-    //
-    //     let mut expected = ByteMap::new();
-    //     expected.insert(b'f', vec![false]);
-    //     expected.insert(b'c', vec![true, false, false]);
-    //     expected.insert(b'd', vec![true, false, true]);
-    //     expected.insert(b'a', vec![true, true, false, false]);
-    //     expected.insert(b'b', vec![true, true, false, true]);
-    //     expected.insert(b'e', vec![true, true, true]);
-    //
-    //     assert_eq!(map, expected);
-    // }
 }

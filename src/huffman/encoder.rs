@@ -16,7 +16,7 @@ where
 impl<'a, R, W> Encoder<'a, R, W>
 where
     R: Read,
-    W: Write,
+    W: Write + std::fmt::Debug,
 {
     pub fn new(
         reader: &'a mut BufReader<R>,
@@ -31,12 +31,36 @@ where
     }
 
     pub fn encode(self) -> io::Result<()> {
+        println!("{:?}", self.byte_map);
+        self.encode_codes()?.encode_data()
+    }
+
+    fn encode_codes(self) -> io::Result<Self> {
+        let mut codes: Vec<(u8, u8)> = self
+            .byte_map
+            .iter()
+            .map(|(byte, code)| (*byte, code.len))
+            .collect();
+
+        codes
+            .sort_by(|&(byte_a, len_a), (byte_b, len_b)| len_a.cmp(len_b).then(byte_a.cmp(byte_b)));
+
+        self.writer.write_bytes(&[codes.len() as u8])?;
+
+        for (byte, len) in codes {
+            self.writer.write_bytes(&[byte, len])?;
+        }
+
+        Ok(self)
+    }
+
+    fn encode_data(self) -> io::Result<()> {
         loop {
             let buffer = self.reader.fill_buf()?;
             let length = buffer.len();
 
             if length == 0 {
-                break Ok(());
+                break;
             }
 
             for byte in buffer {
@@ -45,18 +69,19 @@ where
                     .get(byte)
                     .expect("Every byte should have a key if byte_map was constructed properly");
 
-                self.writer.write_bits(code.bit_pattern, code.len)?
+                self.writer.write_bits(code.bit_pattern, code.len)?;
             }
 
             self.reader.consume(length);
         }
+
+        self.writer.flush()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use core::panic;
-    use std::io::{Cursor, SeekFrom};
+    use std::io::Cursor;
 
     use crate::huffman::frequency::Frequencies;
 
@@ -87,11 +112,9 @@ mod tests {
         let encoder = Encoder::new(&mut input, &mut output, &byte_map);
         encoder.encode()?;
 
-        output.flush()?;
-
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [128];
+        let expected = [1, b'3', 1, 128];
         assert_eq!(inner_vec, expected);
 
         Ok(())
@@ -113,7 +136,10 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [255; 8];
+        let mut expected = [255; 11];
+        expected[0] = 1;
+        expected[1] = 50;
+        expected[2] = 1;
 
         assert_eq!(inner_vec, expected);
 
@@ -136,7 +162,7 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [85];
+        let expected = [2, 97, 1, 98, 1, 85];
 
         assert_eq!(inner_vec, expected);
 
@@ -159,7 +185,7 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [11];
+        let expected = [3, 97, 1, 98, 2, 99, 2, 11];
 
         assert_eq!(inner_vec, expected);
 

@@ -71,7 +71,7 @@ impl ByteMap {
     ) -> io::Result<()>
     where
         R: Read + Seek,
-        W: Write,
+        W: Write + std::fmt::Debug,
     {
         let encoder = Encoder::new(reader, output, self);
         encoder.encode()

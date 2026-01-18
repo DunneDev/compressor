@@ -10,12 +10,11 @@ use std::io::prelude::*;
 use std::io::{self, BufReader, BufWriter, SeekFrom};
 
 const BYTE_ALPHABET_SIZE: usize = 256;
-const BUFFER_SIZE: usize = 8192;
 
 pub fn compress<R, W>(input: R, output: W) -> io::Result<()>
 where
     R: Read + Seek,
-    W: Write,
+    W: Write + std::fmt::Debug,
 {
     let mut reader = BufReader::new(input);
     let mut writer = BitWriter::new(BufWriter::new(output));

@@ -1,5 +1,5 @@
+use crate::huffman::BYTE_ALPHABET_SIZE;
 use crate::huffman::tree::HuffmanNode;
-use crate::huffman::{BUFFER_SIZE, BYTE_ALPHABET_SIZE};
 use std::io::prelude::*;
 use std::io::{self, BufReader, Cursor};
 use std::ops::{Deref, DerefMut};
