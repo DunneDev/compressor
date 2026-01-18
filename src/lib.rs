@@ -9,3 +9,11 @@ where
 {
     huffman::compress(input, output)
 }
+
+pub fn decompress<R, W>(_input: R, _output: W) -> io::Result<()>
+where
+    R: Read + Seek,
+    W: Write,
+{
+    todo!()
+}
