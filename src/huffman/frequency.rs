@@ -1,7 +1,7 @@
 use crate::huffman::BYTE_ALPHABET_SIZE;
 use crate::huffman::tree::HuffmanNode;
 use std::io::prelude::*;
-use std::io::{self, BufReader, Cursor};
+use std::io::{self, BufReader};
 use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -16,7 +16,7 @@ impl Frequencies {
     where
         R: Read + Seek,
     {
-        let mut frequencies = Frequencies([0; BYTE_ALPHABET_SIZE]);
+        let mut frequencies = Frequencies::new();
 
         loop {
             let buffer = reader.fill_buf()?;
@@ -65,6 +65,7 @@ impl DerefMut for Frequencies {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Cursor;
 
     #[test]
     fn get_frequencies_empty_input() {

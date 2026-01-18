@@ -14,7 +14,7 @@ const BYTE_ALPHABET_SIZE: usize = 256;
 pub fn compress<R, W>(input: R, output: W) -> io::Result<()>
 where
     R: Read + Seek,
-    W: Write + std::fmt::Debug,
+    W: Write,
 {
     let mut reader = BufReader::new(input);
     let mut writer = BitWriter::new(BufWriter::new(output));
@@ -25,7 +25,7 @@ where
         return Ok(());
     }
 
-    let pos = reader.seek(SeekFrom::Start(0))?;
+    reader.seek(SeekFrom::Start(0))?;
 
     frequencies
         .to_huff_tree()

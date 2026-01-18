@@ -16,7 +16,7 @@ where
 impl<'a, R, W> Encoder<'a, R, W>
 where
     R: Read,
-    W: Write + std::fmt::Debug,
+    W: Write,
 {
     pub fn new(
         reader: &'a mut BufReader<R>,
@@ -114,7 +114,7 @@ mod tests {
         let encoder = Encoder::new(&mut input, &mut output, &byte_map);
         encoder.encode()?;
 
-        let inner_vec = output.into_inner().into_inner()?.into_inner();
+        let inner_vec = output.writer.into_inner()?.into_inner();
 
         // 1 code => 0x0001
         // '3' => len 1
@@ -143,7 +143,7 @@ mod tests {
         byte_map.encode(&mut input, &mut output)?;
         output.flush()?;
 
-        let inner_vec = output.into_inner().into_inner()?.into_inner();
+        let inner_vec = output.writer.into_inner()?.into_inner();
 
         // 64 bits of '1' => 8 full bytes of 0xFF
         let mut expected = vec![0xFF; 12];
@@ -171,7 +171,7 @@ mod tests {
         byte_map.encode(&mut input, &mut output)?;
         output.flush()?;
 
-        let inner_vec = output.into_inner().into_inner()?.into_inner();
+        let inner_vec = output.writer.into_inner()?.into_inner();
 
         // Codes:
         // a -> 0
@@ -203,7 +203,7 @@ mod tests {
         byte_map.encode(&mut input, &mut output)?;
         output.flush()?;
 
-        let inner_vec = output.into_inner().into_inner()?.into_inner();
+        let inner_vec = output.writer.into_inner()?.into_inner();
 
         // Canonical codes:
         // a -> len 1

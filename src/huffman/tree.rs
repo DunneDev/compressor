@@ -1,8 +1,8 @@
 use crate::huffman::BYTE_ALPHABET_SIZE;
-use crate::huffman::byte_map::{ByteMap, CodeEntry, CodeLength};
+use crate::huffman::byte_map::{ByteMap, CodeLength};
 use crate::huffman::frequency::Frequencies;
 use std::cmp;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::BinaryHeap;
 
 #[derive(Debug)]
 pub enum HuffmanNode {

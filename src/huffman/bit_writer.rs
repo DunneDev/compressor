@@ -3,7 +3,7 @@ use std::io::{self, Write};
 const U8_BITS: u8 = u8::BITS as u8;
 
 pub struct BitWriter<T: Write> {
-    writer: T,
+    pub writer: T,
     byte_buffer: u8,
     bits_filled: u8,
 }
@@ -18,13 +18,13 @@ impl<T: Write> BitWriter<T> {
         }
     }
 
-    pub fn into_inner(self) -> T {
-        self.writer
-    }
-
-    pub fn by_ref(&mut self) -> &mut T {
-        self.writer.by_ref()
-    }
+    // pub fn into_inner(self) -> T {
+    //     self.writer
+    // }
+    //
+    // pub fn by_ref(&mut self) -> &mut T {
+    //     self.writer.by_ref()
+    // }
 
     pub fn write_bit(&mut self, bit: bool) -> io::Result<()> {
         self.byte_buffer = (self.byte_buffer << 1) | bit as u8;
