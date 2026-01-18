@@ -45,7 +45,8 @@ where
         codes
             .sort_by(|&(byte_a, len_a), (byte_b, len_b)| len_a.cmp(len_b).then(byte_a.cmp(byte_b)));
 
-        self.writer.write_bytes(&[codes.len() as u8])?;
+        let count = codes.len() as u16;
+        self.writer.write_bytes(&count.to_be_bytes())?;
 
         for (byte, len) in codes {
             self.writer.write_bytes(&[byte, len])?;
@@ -81,15 +82,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
+    use std::io::{BufReader, BufWriter, Cursor};
 
+    use crate::huffman::bit_writer::BitWriter;
     use crate::huffman::frequency::Frequencies;
 
     use super::*;
 
     fn create_input<T>(input: T) -> BufReader<Cursor<T>>
     where
-        T: std::convert::AsRef<[u8]>,
+        T: AsRef<[u8]>,
     {
         BufReader::new(Cursor::new(input))
     }
@@ -114,9 +116,16 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [1, b'3', 1, 128];
-        assert_eq!(inner_vec, expected);
+        // 1 code => 0x0001
+        // '3' => len 1
+        // data: 1 bit => 1000_0000
+        let expected = [
+            0, 1, // code count (u16 BE)
+            b'3', 1,   // (byte, length)
+            128, // encoded data
+        ];
 
+        assert_eq!(inner_vec, expected);
         Ok(())
     }
 
@@ -136,13 +145,15 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let mut expected = [255; 11];
-        expected[0] = 1;
-        expected[1] = 50;
-        expected[2] = 1;
+        // 64 bits of '1' => 8 full bytes of 0xFF
+        let mut expected = vec![0xFF; 12];
+
+        expected[0] = 0; // code count high byte
+        expected[1] = 1; // code count low byte
+        expected[2] = 50; // symbol
+        expected[3] = 1; // code length
 
         assert_eq!(inner_vec, expected);
-
         Ok(())
     }
 
@@ -162,10 +173,19 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [2, 97, 1, 98, 1, 85];
+        // Codes:
+        // a -> 0
+        // b -> 1
+        //
+        // bits: 01010101 = 0x55
+        let expected = [
+            0, 2, // code count
+            97, 1, // 'a'
+            98, 1,  // 'b'
+            85, // data
+        ];
 
         assert_eq!(inner_vec, expected);
-
         Ok(())
     }
 
@@ -185,10 +205,22 @@ mod tests {
 
         let inner_vec = output.into_inner().into_inner()?.into_inner();
 
-        let expected = [3, 97, 1, 98, 2, 99, 2, 11];
+        // Canonical codes:
+        // a -> len 1
+        // b -> len 2
+        // c -> len 2
+        //
+        // bits: a a a a b c
+        //        1 1 1 1 01 10 => 11110110 = 0xF6
+        let expected = [
+            0, 3, // code count
+            97, 1, // 'a'
+            98, 2, // 'b'
+            99, 2,  // 'c'
+            11, // encoded data
+        ];
 
         assert_eq!(inner_vec, expected);
-
         Ok(())
     }
 }

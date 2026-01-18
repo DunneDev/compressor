@@ -42,6 +42,10 @@ impl Frequencies {
     fn count_byte(&mut self, byte: u8) {
         self[byte as usize] += 1;
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.iter().all(|&freq| freq == 0)
+    }
 }
 
 impl Deref for Frequencies {
