@@ -91,3 +91,71 @@ impl ops::DerefMut for ByteMap {
         &mut self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_code_length_produces_len_1_code() {
+        let mut codes = vec![CodeLength { byte: b'a', len: 5 }];
+
+        let map = ByteMap::new(&mut codes);
+
+        let entry = map.get(&b'a').expect("entry should exist");
+        assert_eq!(entry.len, 1);
+        assert_eq!(entry.bit_pattern, 1);
+    }
+
+    #[test]
+    fn canonical_codes_with_same_length_are_sequential() {
+        let mut codes = vec![
+            CodeLength { byte: b'a', len: 2 },
+            CodeLength { byte: b'b', len: 2 },
+            CodeLength { byte: b'c', len: 2 },
+        ];
+
+        let map = ByteMap::new(&mut codes);
+
+        assert_eq!(map[&b'a'].bit_pattern, 0b00);
+        assert_eq!(map[&b'b'].bit_pattern, 0b01);
+        assert_eq!(map[&b'c'].bit_pattern, 0b10);
+
+        assert_eq!(map[&b'a'].len, 2);
+        assert_eq!(map[&b'b'].len, 2);
+        assert_eq!(map[&b'c'].len, 2);
+    }
+
+    #[test]
+    fn codes_are_sorted_by_length_then_byte() {
+        let mut codes = vec![
+            CodeLength { byte: b'c', len: 3 },
+            CodeLength { byte: b'a', len: 2 },
+            CodeLength { byte: b'b', len: 2 },
+        ];
+
+        let map = ByteMap::new(&mut codes);
+
+        assert_eq!(map[&b'a'].bit_pattern, 0b00);
+        assert_eq!(map[&b'b'].bit_pattern, 0b01);
+
+        assert_eq!(map[&b'c'].bit_pattern, 0b100);
+        assert_eq!(map[&b'c'].len, 3);
+    }
+
+    #[test]
+    fn bit_pattern_shifts_when_length_increases() {
+        let mut codes = vec![
+            CodeLength { byte: b'a', len: 1 },
+            CodeLength { byte: b'b', len: 3 },
+        ];
+
+        let map = ByteMap::new(&mut codes);
+
+        assert_eq!(map[&b'a'].bit_pattern, 0b0);
+        assert_eq!(map[&b'a'].len, 1);
+
+        assert_eq!(map[&b'b'].bit_pattern, 0b100);
+        assert_eq!(map[&b'b'].len, 3);
+    }
+}
